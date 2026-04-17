@@ -1,0 +1,512 @@
+{% extends "analysis_app/base.html" %}
+
+{% block title %}Dashboard — NetflixIQ{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── STAT GRID ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card.red    { --accent-gradient: var(--netflix-red); }
+  .stat-card.teal   { --accent-gradient: var(--accent-teal); }
+  .stat-card.gold   { --accent-gradient: var(--accent-gold); }
+  .stat-card.purple { --accent-gradient: var(--accent-purple); }
+  .stat-card.blue   { --accent-gradient: #4fa3ff; }
+
+  .stat-card.red   .stat-icon { background: rgba(229,9,20,0.12); color: var(--netflix-red); }
+  .stat-card.teal  .stat-icon { background: rgba(0,201,167,0.12); color: var(--accent-teal); }
+  .stat-card.gold  .stat-icon { background: rgba(245,197,24,0.12); color: var(--accent-gold); }
+  .stat-card.purple .stat-icon { background: rgba(168,85,247,0.12); color: var(--accent-purple); }
+  .stat-card.blue  .stat-icon { background: rgba(79,163,255,0.12); color: #4fa3ff; }
+
+  /* ── CHARTS GRID ── */
+  .charts-grid-top {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .charts-grid-mid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .charts-grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 1024px) {
+    .charts-grid-top,
+    .charts-grid-mid,
+    .charts-grid-bottom { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <!-- Page Header -->
+  <div class="page-header animate-fade-up">
+    <h1>ANALYTICS <span>DASHBOARD</span></h1>
+    <p>Real-time insights from the Netflix content library &mdash; {{ stats.total_titles|default:"0" }} titles analyzed</p>
+  </div>
+
+  <!-- ── STAT CARDS ── -->
+  <div class="stats-grid stagger">
+
+    <div class="card stat-card red animate-fade-up">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-collection-play-fill"></i></div>
+        <div class="stat-value">{{ stats.total_titles }}</div>
+        <div class="stat-label">Total Titles</div>
+        <div class="stat-sub">Movies &amp; TV Shows</div>
+      </div>
+    </div>
+
+    <div class="card stat-card teal animate-fade-up">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-film"></i></div>
+        <div class="stat-value">{{ stats.total_movies }}</div>
+        <div class="stat-label">Movies</div>
+        <div class="stat-sub">Feature films</div>
+      </div>
+    </div>
+
+    <div class="card stat-card gold animate-fade-up">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-tv-fill"></i></div>
+        <div class="stat-value">{{ stats.total_tv_shows }}</div>
+        <div class="stat-label">TV Shows</div>
+        <div class="stat-sub">Series &amp; seasons</div>
+      </div>
+    </div>
+
+    <div class="card stat-card purple animate-fade-up">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-geo-alt-fill"></i></div>
+        <div class="stat-value" style="font-size:1.4rem;margin-top:4px;">{{ stats.top_country }}</div>
+        <div class="stat-label">Top Country</div>
+        <div class="stat-sub">Most content produced</div>
+      </div>
+    </div>
+
+    <div class="card stat-card blue animate-fade-up">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-tag-fill"></i></div>
+        <div class="stat-value" style="font-size:1.1rem;margin-top:8px;line-height:1.3">{{ stats.most_popular_genre }}</div>
+        <div class="stat-label">Top Genre</div>
+        <div class="stat-sub">Most listed category</div>
+      </div>
+    </div>
+
+  </div><!-- /stats-grid -->
+
+  <!-- ── ROW 1: Pie + Growth Line ── -->
+  <div class="charts-grid-top">
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">CONTENT TYPE</div>
+          <div class="chart-subtitle">Movies vs TV Shows split</div>
+        </div>
+        <i class="bi bi-pie-chart-fill text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:280px">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">CONTENT GROWTH BY YEAR</div>
+          <div class="chart-subtitle">New titles added over time</div>
+        </div>
+        <i class="bi bi-graph-up text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:280px">
+        <canvas id="growthChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── ROW 2: Countries + Genres ── -->
+  <div class="charts-grid-mid">
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">TOP 10 COUNTRIES</div>
+          <div class="chart-subtitle">Content production by region</div>
+        </div>
+        <i class="bi bi-globe text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:320px">
+        <canvas id="countryChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">TOP GENRES</div>
+          <div class="chart-subtitle">Most popular content categories</div>
+        </div>
+        <i class="bi bi-tags-fill text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:320px">
+        <canvas id="genreChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── ROW 3: Ratings + Duration + Monthly ── -->
+  <div class="charts-grid-bottom">
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">RATINGS DISTRIBUTION</div>
+          <div class="chart-subtitle">Content rating breakdown</div>
+        </div>
+        <i class="bi bi-shield-fill-check text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:260px">
+        <canvas id="ratingsChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">MOVIE DURATION</div>
+          <div class="chart-subtitle">Runtime distribution (minutes)</div>
+        </div>
+        <i class="bi bi-clock-fill text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:260px">
+        <canvas id="durationChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card chart-card animate-fade-up">
+      <div class="card-header d-flex justify-content-between align-items-start">
+        <div>
+          <div class="card-title">MONTHLY ADDITIONS</div>
+          <div class="chart-subtitle">When content was added</div>
+        </div>
+        <i class="bi bi-calendar3 text-netflix" style="font-size:1.2rem"></i>
+      </div>
+      <div class="chart-wrapper" style="height:260px">
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── ROW 4: Top Directors ── -->
+  <div class="card chart-card animate-fade-up" style="margin-bottom:1rem">
+    <div class="card-header d-flex justify-content-between align-items-start">
+      <div>
+        <div class="card-title">TOP DIRECTORS</div>
+        <div class="chart-subtitle">Directors with most titles on Netflix</div>
+      </div>
+      <i class="bi bi-camera-video-fill text-netflix" style="font-size:1.2rem"></i>
+    </div>
+    <div class="chart-wrapper" style="height:260px">
+      <canvas id="directorChart"></canvas>
+    </div>
+  </div>
+
+</div><!-- /page-wrapper -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const DATA = {{ chart_data_json|safe }};
+
+/* ── Palette ── */
+const RED      = '#E50914';
+const TEAL     = '#00c9a7';
+const GOLD     = '#f5c518';
+const PURPLE   = '#a855f7';
+const BLUE     = '#4fa3ff';
+const CORAL    = '#ff6b6b';
+const MINT     = '#51cf66';
+const ORANGE   = '#ff9f43';
+
+const PALETTE = [RED, TEAL, GOLD, PURPLE, BLUE, CORAL, MINT, ORANGE,
+                 '#e056cd','#45aaf2','#fd9644','#26de81'];
+
+const GRID_COLOR = 'rgba(42,42,58,0.8)';
+
+/* ── 1. Type Pie ── */
+(function(){
+  const d = DATA.type_distribution;
+  new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        data: d.values,
+        backgroundColor: [RED, TEAL],
+        borderColor: '#12121a',
+        borderWidth: 3,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#9090a8', padding: 20, font: { size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()}`
+          }
+        }
+      },
+      animation: { animateRotate: true, duration: 900 }
+    }
+  });
+})();
+
+/* ── 2. Growth Line ── */
+(function(){
+  const d = DATA.content_by_year;
+  new Chart(document.getElementById('growthChart'), {
+    type: 'line',
+    data: {
+      labels: d.years,
+      datasets: [
+        {
+          label: 'Movies',
+          data: d.movies,
+          borderColor: RED,
+          backgroundColor: 'rgba(229,9,20,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'TV Shows',
+          data: d.tv_shows,
+          borderColor: TEAL,
+          backgroundColor: 'rgba(0,201,167,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: { grid: { color: GRID_COLOR }, ticks: { maxTicksLimit: 10 } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { labels: { color: '#9090a8' } } },
+      animation: { duration: 1000 }
+    }
+  });
+})();
+
+/* ── 3. Countries Bar ── */
+(function(){
+  const d = DATA.top_countries;
+  new Chart(document.getElementById('countryChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Titles',
+        data: d.values,
+        backgroundColor: d.labels.map((_,i) => PALETTE[i % PALETTE.length] + 'cc'),
+        borderColor:      d.labels.map((_,i) => PALETTE[i % PALETTE.length]),
+        borderWidth: 1.5,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      scales: {
+        x: { grid: { color: GRID_COLOR }, beginAtZero: true },
+        y: { grid: { display: false } }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+
+/* ── 4. Genres Bar ── */
+(function(){
+  const d = DATA.top_genres;
+  new Chart(document.getElementById('genreChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Count',
+        data: d.values,
+        backgroundColor: RED + 'bb',
+        borderColor: RED,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 30, minRotation: 20, font: { size: 10 } } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+
+/* ── 5. Ratings ── */
+(function(){
+  const d = DATA.ratings_distribution;
+  new Chart(document.getElementById('ratingsChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Titles',
+        data: d.values,
+        backgroundColor: d.labels.map((_,i) => PALETTE[i % PALETTE.length] + 'aa'),
+        borderColor:      d.labels.map((_,i) => PALETTE[i % PALETTE.length]),
+        borderWidth: 1.5,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+
+/* ── 6. Duration Histogram ── */
+(function(){
+  const d = DATA.duration_distribution;
+  new Chart(document.getElementById('durationChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Movies',
+        data: d.values,
+        backgroundColor: PURPLE + 'aa',
+        borderColor: PURPLE,
+        borderWidth: 1.5,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+
+/* ── 7. Monthly Bar ── */
+(function(){
+  const d = DATA.monthly_additions;
+  new Chart(document.getElementById('monthlyChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Titles Added',
+        data: d.values,
+        backgroundColor: GOLD + 'aa',
+        borderColor: GOLD,
+        borderWidth: 1.5,
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+
+/* ── 8. Directors Bar ── */
+(function(){
+  const d = DATA.top_directors;
+  new Chart(document.getElementById('directorChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Titles',
+        data: d.values,
+        backgroundColor: TEAL + 'aa',
+        borderColor: TEAL,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 30, font: { size: 11 } } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true }
+      },
+      plugins: { legend: { display: false } },
+      animation: { duration: 900 }
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,386 @@
+{% extends "analysis_app/base.html" %}
+
+{% block title %}Browse — NetflixIQ{% endblock %}
+
+{% block extra_head %}
+<style>
+  .filter-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.35s ease forwards;
+  }
+
+  .filter-label {
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .results-count {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .results-count span {
+    color: var(--netflix-red);
+    font-weight: 600;
+  }
+
+  .table-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: fadeInUp 0.4s ease forwards;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .no-results i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+    color: var(--border-color);
+  }
+
+  .description-cell {
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  /* Active filters display */
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 1rem;
+  }
+
+  .filter-chip {
+    background: rgba(229,9,20,0.1);
+    border: 1px solid rgba(229,9,20,0.25);
+    color: var(--netflix-red);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .filter-chip a {
+    color: var(--netflix-red);
+    text-decoration: none;
+    opacity: 0.7;
+  }
+
+  .filter-chip a:hover { opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <div class="page-header animate-fade-up">
+    <h1>BROWSE <span>TITLES</span></h1>
+    <p>Search and filter through the complete Netflix content library</p>
+  </div>
+
+  <!-- ── FILTER PANEL ── -->
+  <div class="filter-panel">
+    <form method="get" action="/search/" id="searchForm">
+      <div class="row g-3">
+
+        <!-- Search box -->
+        <div class="col-12 col-md-6">
+          <label class="filter-label">Search Title</label>
+          <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input
+              type="text"
+              name="q"
+              value="{{ query }}"
+              placeholder="Search movies and TV shows…"
+              class="search-input"
+              id="liveSearch"
+              autocomplete="off"
+            />
+          </div>
+        </div>
+
+        <!-- Type -->
+        <div class="col-6 col-md-2">
+          <label class="filter-label">Type</label>
+          <select name="type" class="filter-select">
+            <option value="">All Types</option>
+            <option value="Movie"   {% if filter_type == "Movie" %}selected{% endif %}>Movie</option>
+            <option value="TV Show" {% if filter_type == "TV Show" %}selected{% endif %}>TV Show</option>
+          </select>
+        </div>
+
+        <!-- Rating -->
+        <div class="col-6 col-md-2">
+          <label class="filter-label">Rating</label>
+          <select name="rating" class="filter-select">
+            <option value="">All Ratings</option>
+            {% for r in ratings %}
+            <option value="{{ r }}" {% if filter_rating == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Year -->
+        <div class="col-6 col-md-2">
+          <label class="filter-label">Release Year</label>
+          <select name="year" class="filter-select">
+            <option value="">All Years</option>
+            {% for y in years %}
+            <option value="{{ y }}" {% if filter_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Genre -->
+        <div class="col-6 col-md-4">
+          <label class="filter-label">Genre</label>
+          <select name="genre" class="filter-select">
+            <option value="">All Genres</option>
+            {% for g in genres %}
+            <option value="{{ g }}" {% if filter_genre == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Country -->
+        <div class="col-6 col-md-4">
+          <label class="filter-label">Country</label>
+          <select name="country" class="filter-select">
+            <option value="">All Countries</option>
+            {% for c in countries %}
+            <option value="{{ c }}" {% if filter_country == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-12 col-md-4 d-flex align-items-end gap-2">
+          <button type="submit" class="btn-netflix flex-grow-1">
+            <i class="bi bi-search me-1"></i>Search
+          </button>
+          <a href="/search/" class="btn-outline-netflix" style="padding:0.6rem 1rem;border-radius:8px;text-decoration:none;font-size:0.875rem;font-weight:600">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Active filter chips -->
+      {% if query or filter_type or filter_country or filter_year or filter_rating or filter_genre %}
+      <div class="active-filters">
+        {% if query %}
+        <div class="filter-chip"><i class="bi bi-search" style="font-size:0.65rem"></i> "{{ query }}"</div>
+        {% endif %}
+        {% if filter_type %}
+        <div class="filter-chip"><i class="bi bi-collection" style="font-size:0.65rem"></i> {{ filter_type }}</div>
+        {% endif %}
+        {% if filter_rating %}
+        <div class="filter-chip"><i class="bi bi-shield" style="font-size:0.65rem"></i> {{ filter_rating }}</div>
+        {% endif %}
+        {% if filter_year %}
+        <div class="filter-chip"><i class="bi bi-calendar" style="font-size:0.65rem"></i> {{ filter_year }}</div>
+        {% endif %}
+        {% if filter_genre %}
+        <div class="filter-chip"><i class="bi bi-tag" style="font-size:0.65rem"></i> {{ filter_genre }}</div>
+        {% endif %}
+        {% if filter_country %}
+        <div class="filter-chip"><i class="bi bi-geo-alt" style="font-size:0.65rem"></i> {{ filter_country }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </form>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="results-header">
+    <div class="results-count">
+      Showing <span>{{ results|length }}</span> of <span>{{ total_results }}</span> results
+      {% if total_results > 100 %}(first 100 shown){% endif %}
+    </div>
+    {% if results %}
+    <div style="font-size:0.75rem;color:var(--text-muted)">
+      <i class="bi bi-sort-down me-1"></i>Sorted by relevance
+    </div>
+    {% endif %}
+  </div>
+
+  {% if results %}
+  <div class="table-wrapper">
+    <div style="overflow-x:auto">
+      <table class="netflix-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Director</th>
+            <th>Country</th>
+            <th>Year</th>
+            <th>Rating</th>
+            <th>Genre</th>
+            <th>Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in results %}
+          <tr>
+            <td class="title-cell">
+              <a href="#" onclick="showDetail('{{ item.show_id|default:'' }}', '{{ item.title|escapejs }}'); return false;">
+                {{ item.title }}
+              </a>
+            </td>
+            <td>
+              {% if item.type == "Movie" %}
+              <span class="badge-type badge-movie">Movie</span>
+              {% else %}
+              <span class="badge-type badge-tv">TV Show</span>
+              {% endif %}
+            </td>
+            <td>{{ item.director|default:"—" }}</td>
+            <td>{{ item.country|default:"—" }}</td>
+            <td class="mono">{{ item.release_year|default:"—" }}</td>
+            <td><span class="rating-badge">{{ item.rating|default:"—" }}</span></td>
+            <td style="max-width:200px">
+              {% for genre in item.listed_in.split %}
+                {% if forloop.counter <= 2 %}
+                <span class="genre-pill">{{ genre|cut:"," }}</span>
+                {% endif %}
+              {% endfor %}
+            </td>
+            <td class="mono">{{ item.duration|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="table-wrapper">
+    <div class="no-results">
+      <i class="bi bi-search"></i>
+      <div style="font-size:1.1rem;color:var(--text-secondary);margin-bottom:0.5rem">No results found</div>
+      <div style="font-size:0.85rem">Try adjusting your search criteria or clearing filters</div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ── Detail Modal ── -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border-color)">
+        <h5 class="modal-title" id="modalTitle" style="font-family:var(--font-display);letter-spacing:1px;color:var(--text-primary)"></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modalBody" style="padding:1.5rem">
+        <div class="spinner-netflix"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function showDetail(showId, title) {
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = '<div class="spinner-netflix"></div>';
+  modal.show();
+
+  // Fetch recommendations
+  fetch('/api/recommendations/?title=' + encodeURIComponent(title))
+    .then(r => r.json())
+    .then(data => {
+      const recs = data.recommendations || [];
+      let html = '';
+
+      // Show some placeholder detail
+      html += `
+        <div class="mb-4" style="color:var(--text-secondary);font-size:0.9rem">
+          <i class="bi bi-info-circle text-netflix me-2"></i>
+          Showing AI-powered recommendations based on genre, director, and cast similarity.
+        </div>
+      `;
+
+      if (recs.length > 0) {
+        html += `<div style="font-family:var(--font-display);font-size:1rem;letter-spacing:1px;color:var(--text-muted);margin-bottom:1rem">YOU MIGHT ALSO LIKE</div>`;
+        html += '<div class="row g-2">';
+        recs.forEach(r => {
+          const badgeClass = r.type === 'Movie' ? 'badge-movie' : 'badge-tv';
+          const scoreColor = r.score > 0.5 ? '#00c9a7' : r.score > 0.2 ? '#f5c518' : '#9090a8';
+          html += `
+            <div class="col-md-6">
+              <div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:1rem;height:100%">
+                <div style="font-weight:500;color:var(--text-primary);margin-bottom:6px;font-size:0.9rem">${r.title}</div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="badge-type ${badgeClass}">${r.type}</span>
+                  <span class="rating-badge">${r.rating || '—'}</span>
+                  <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted)">${r.release_year}</span>
+                  <span style="font-family:var(--font-mono);font-size:0.7rem;color:${scoreColor};margin-left:auto">
+                    <i class="bi bi-stars me-1"></i>${(r.score * 100).toFixed(0)}% match
+                  </span>
+                </div>
+                <div style="margin-top:8px">
+                  ${r.listed_in.split(',').slice(0,2).map(g => `<span class="genre-pill">${g.trim()}</span>`).join('')}
+                </div>
+              </div>
+            </div>`;
+        });
+        html += '</div>';
+      } else {
+        html += `
+          <div style="text-align:center;padding:2rem;color:var(--text-muted)">
+            <i class="bi bi-emoji-neutral" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>
+            No recommendations found for this title.
+          </div>`;
+      }
+      document.getElementById('modalBody').innerHTML = html;
+    })
+    .catch(() => {
+      document.getElementById('modalBody').innerHTML = `
+        <div style="text-align:center;color:var(--text-muted);padding:2rem">
+          <i class="bi bi-exclamation-triangle text-netflix" style="font-size:2rem;display:block;margin-bottom:0.5rem"></i>
+          Could not load recommendations.
+        </div>`;
+    });
+}
+</script>
+{% endblock %}

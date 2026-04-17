@@ -1,0 +1,112 @@
+{% extends "analysis_app/base.html" %}
+
+{% block title %}{{ item.title }} — NetflixIQ{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <div class="mb-3">
+    <a href="/search/" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem">
+      <i class="bi bi-arrow-left me-1"></i>Back to Browse
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <div>
+              {% if item.type == "Movie" %}
+              <span class="badge-type badge-movie mb-2 d-inline-block">Movie</span>
+              {% else %}
+              <span class="badge-type badge-tv mb-2 d-inline-block">TV Show</span>
+              {% endif %}
+              <h1 style="font-family:var(--font-display);font-size:2rem;letter-spacing:1px;color:var(--text-primary)">
+                {{ item.title }}
+              </h1>
+            </div>
+          </div>
+
+          <p style="color:var(--text-secondary);line-height:1.7">{{ item.description }}</p>
+
+          <hr class="section-divider">
+
+          <div class="row g-3">
+            {% if item.director %}
+            <div class="col-6 col-md-4">
+              <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Director</div>
+              <div style="color:var(--text-primary);font-size:0.9rem">{{ item.director }}</div>
+            </div>
+            {% endif %}
+            <div class="col-6 col-md-4">
+              <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Country</div>
+              <div style="color:var(--text-primary);font-size:0.9rem">{{ item.country|default:"N/A" }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Release Year</div>
+              <div style="color:var(--text-primary);font-family:var(--font-mono);font-size:0.9rem">{{ item.release_year }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Rating</div>
+              <span class="rating-badge">{{ item.rating|default:"N/A" }}</span>
+            </div>
+            <div class="col-6 col-md-4">
+              <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Duration</div>
+              <div style="color:var(--text-primary);font-size:0.9rem">{{ item.duration|default:"N/A" }}</div>
+            </div>
+          </div>
+
+          {% if item.listed_in %}
+          <hr class="section-divider">
+          <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Genres</div>
+          {% for g in item.listed_in.split %}
+          <span class="genre-pill">{{ g|cut:"," }}</span>
+          {% endfor %}
+          {% endif %}
+
+          {% if item.cast %}
+          <hr class="section-divider">
+          <div style="font-size:0.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Cast</div>
+          <div style="color:var(--text-secondary);font-size:0.875rem">{{ item.cast }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header" style="background:transparent;border-bottom:1px solid var(--border-color);padding:1.25rem 1.5rem">
+          <div style="font-family:var(--font-display);letter-spacing:1px;color:var(--text-primary)">RECOMMENDED</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Similar content you might enjoy</div>
+        </div>
+        <div class="card-body" style="padding:1rem">
+          {% if recommendations %}
+            {% for rec in recommendations %}
+            <div style="padding:0.75rem;border-radius:8px;background:var(--bg-secondary);margin-bottom:0.5rem;border:1px solid var(--border-color)">
+              <div style="font-size:0.875rem;font-weight:500;color:var(--text-primary);margin-bottom:4px">{{ rec.title }}</div>
+              <div class="d-flex align-items-center gap-2">
+                {% if rec.type == "Movie" %}
+                <span class="badge-type badge-movie">Movie</span>
+                {% else %}
+                <span class="badge-type badge-tv">TV</span>
+                {% endif %}
+                <span class="mono" style="font-size:0.7rem;color:var(--text-muted)">{{ rec.release_year }}</span>
+                <span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--accent-teal);margin-left:auto">
+                  {{ rec.score|floatformat:2 }}
+                </span>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div style="text-align:center;padding:1.5rem;color:var(--text-muted);font-size:0.85rem">
+              No recommendations available.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

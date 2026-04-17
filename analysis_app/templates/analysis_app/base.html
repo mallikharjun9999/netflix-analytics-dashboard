@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}NetflixIQ — Analytics Dashboard{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --netflix-red: #E50914;
+      --netflix-red-dark: #b20710;
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #16161f;
+      --bg-card-hover: #1e1e2a;
+      --border-color: #2a2a3a;
+      --text-primary: #f0f0f5;
+      --text-secondary: #9090a8;
+      --text-muted: #5a5a72;
+      --accent-gold: #f5c518;
+      --accent-teal: #00c9a7;
+      --accent-purple: #a855f7;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius: 12px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --shadow-red: 0 0 30px rgba(229,9,20,0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ──────────────── SCROLLBAR ──────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--netflix-red); }
+
+    /* ──────────────── NAVBAR ──────────────── */
+    .navbar {
+      background: rgba(10,10,15,0.95) !important;
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(20px);
+      padding: 0 2rem;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar-brand {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: 2px;
+      color: var(--netflix-red) !important;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar-brand span.iq {
+      color: var(--text-primary);
+      font-size: 1.6rem;
+    }
+
+    .nav-link {
+      color: var(--text-secondary) !important;
+      font-weight: 500;
+      font-size: 0.875rem;
+      letter-spacing: 0.5px;
+      padding: 0.5rem 1rem !important;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-primary) !important;
+      background: var(--bg-card);
+    }
+
+    .nav-link.active {
+      color: var(--netflix-red) !important;
+    }
+
+    .navbar-badge {
+      background: var(--netflix-red);
+      color: white;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    /* ──────────────── LAYOUT ──────────────── */
+    .page-wrapper {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-size: 2.8rem;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .page-header h1 span {
+      color: var(--netflix-red);
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* ──────────────── CARDS ──────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      transition: all 0.25s ease;
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(229,9,20,0.3);
+      box-shadow: var(--shadow-red);
+      transform: translateY(-2px);
+    }
+
+    .card-body { padding: 1.5rem; }
+
+    /* ──────────────── STAT CARDS ──────────────── */
+    .stat-card {
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent-gradient, var(--netflix-red));
+    }
+
+    .stat-card .stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      flex-shrink: 0;
+    }
+
+    .stat-card .stat-value {
+      font-family: var(--font-display);
+      font-size: 2.8rem;
+      letter-spacing: 1px;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .stat-card .stat-sub {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    /* ──────────────── CHART CARDS ──────────────── */
+    .chart-card .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .chart-card .card-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      color: var(--text-primary);
+      margin: 0;
+    }
+
+    .chart-card .chart-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      padding: 1.25rem;
+    }
+
+    /* ──────────────── BADGES ──────────────── */
+    .badge-type {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .badge-movie {
+      background: rgba(229,9,20,0.15);
+      color: var(--netflix-red);
+      border: 1px solid rgba(229,9,20,0.3);
+    }
+
+    .badge-tv {
+      background: rgba(0,201,167,0.12);
+      color: var(--accent-teal);
+      border: 1px solid rgba(0,201,167,0.25);
+    }
+
+    /* ──────────────── SEARCH BAR ──────────────── */
+    .search-container {
+      position: relative;
+    }
+
+    .search-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem 0.75rem 3rem;
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--netflix-red);
+      box-shadow: 0 0 0 3px rgba(229,9,20,0.1);
+      background: var(--bg-card-hover);
+    }
+
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* ──────────────── FILTER SELECT ──────────────── */
+    .filter-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      width: 100%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--netflix-red);
+      box-shadow: 0 0 0 3px rgba(229,9,20,0.1);
+    }
+
+    .filter-select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    /* ──────────────── TABLE ──────────────── */
+    .netflix-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .netflix-table thead th {
+      background: var(--bg-secondary);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .netflix-table tbody tr {
+      border-bottom: 1px solid rgba(42,42,58,0.5);
+      transition: background 0.15s;
+    }
+
+    .netflix-table tbody tr:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .netflix-table tbody td {
+      padding: 0.875rem 1rem;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      vertical-align: middle;
+    }
+
+    .netflix-table tbody td.title-cell {
+      color: var(--text-primary);
+      font-weight: 500;
+      max-width: 220px;
+    }
+
+    .netflix-table tbody td.title-cell a {
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+
+    .netflix-table tbody td.title-cell a:hover {
+      color: var(--netflix-red);
+    }
+
+    /* ──────────────── BUTTONS ──────────────── */
+    .btn-netflix {
+      background: var(--netflix-red);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.625rem 1.5rem;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.875rem;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-netflix:hover {
+      background: var(--netflix-red-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(229,9,20,0.3);
+    }
+
+    .btn-outline-netflix {
+      background: transparent;
+      color: var(--netflix-red);
+      border: 1px solid var(--netflix-red);
+      border-radius: 8px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline-netflix:hover {
+      background: var(--netflix-red);
+      color: white;
+    }
+
+    /* ──────────────── LOADING SPINNER ──────────────── */
+    .spinner-netflix {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--netflix-red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 2rem auto;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ──────────────── TOAST ──────────────── */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 9999;
+    }
+
+    /* ──────────────── FOOTER ──────────────── */
+    .site-footer {
+      border-top: 1px solid var(--border-color);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 4rem;
+    }
+
+    .site-footer a {
+      color: var(--netflix-red);
+      text-decoration: none;
+    }
+
+    /* ──────────────── ANIMATIONS ──────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .animate-fade-up {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    .animate-fade {
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    /* staggered children */
+    .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.10s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.15s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.20s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.25s; }
+
+    /* ──────────────── MISC UTILS ──────────────── */
+    .text-netflix { color: var(--netflix-red); }
+    .text-teal    { color: var(--accent-teal); }
+    .text-gold    { color: var(--accent-gold); }
+    .text-muted-custom { color: var(--text-muted); }
+    .mono { font-family: var(--font-mono); }
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border-color);
+      margin: 2.5rem 0;
+    }
+
+    /* pill tags */
+    .genre-pill {
+      display: inline-block;
+      background: rgba(168,85,247,0.1);
+      color: var(--accent-purple);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      margin: 2px;
+    }
+
+    /* rating badge */
+    .rating-badge {
+      display: inline-block;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+    }
+
+    /* ──────────────── RESPONSIVE ──────────────── */
+    @media (max-width: 768px) {
+      .page-header h1 { font-size: 2rem; }
+      .stat-card .stat-value { font-size: 2rem; }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-play-circle-fill" style="color:var(--netflix-red);font-size:1.5rem"></i>
+      NETFLIX<span class="iq">IQ</span>
+    </a>
+
+    <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu"
+            style="color:var(--text-secondary)">
+      <i class="bi bi-list" style="font-size:1.5rem"></i>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+             href="/">
+            <i class="bi bi-grid-1x2-fill me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'search' %}active{% endif %}"
+             href="/search/">
+            <i class="bi bi-search me-1"></i>Browse
+          </a>
+        </li>
+        <li class="nav-item ms-lg-2">
+          <span class="navbar-badge">BETA</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE CONTENT -->
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <p>
+    <strong style="color:var(--text-secondary)">NetflixIQ</strong> &mdash;
+    Analytics Dashboard &middot; Built with Django &amp; Chart.js &middot;
+    Data sourced from Netflix Titles Dataset
+  </p>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Chart.js Plugins -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+<script>
+  // Global Chart.js defaults
+  Chart.defaults.color = '#9090a8';
+  Chart.defaults.borderColor = '#2a2a3a';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 12;
+
+  // Helper: format big numbers
+  function fmtNum(n) {
+    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    return n;
+  }
+</script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>
